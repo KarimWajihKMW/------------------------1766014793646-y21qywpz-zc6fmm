@@ -74,11 +74,21 @@ const listings = [
     }
 ];
 
+// Car Models Mapping
+const carModels = {
+    'تويوتا': ['كامري', 'هايلكس', 'كورولا', 'لاندكروزر', 'يارس'],
+    'هيونداي': ['سوناتا', 'النترا', 'توسان', 'اكسنت', 'ازيرا'],
+    'فورد': ['توروس', 'اكسبلورر', 'موستنج', 'F-150', 'اكسبدشن'],
+    'نيسان': ['باترول', 'التيما', 'مكسيما', 'صني', 'اكس تريل'],
+    'مرسيدس': ['E200', 'S500', 'C200', 'G63', 'S-Class']
+};
+
 // DOM Elements
 const grid = document.getElementById('listingsGrid');
 const searchInput = document.getElementById('searchInput');
 const mobileSearchInput = document.getElementById('mobileSearchInput');
-const filterBtns = document.querySelectorAll('.filter-btn');
+const filterContainer = document.getElementById('filterContainer');
+const subFilterContainer = document.getElementById('subFilterContainer');
 const adForm = document.getElementById('adForm');
 
 // Initialize
@@ -126,28 +136,86 @@ function renderListings(data) {
     });
 }
 
-// Filters
+// Filters Setup
 function setupFilters() {
-    filterBtns.forEach(btn => {
+    const btns = filterContainer.querySelectorAll('.filter-btn');
+    
+    btns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // UI Update
-            filterBtns.forEach(b => {
+            // UI Update for Main Filters
+            btns.forEach(b => {
                 b.classList.remove('bg-brand-600', 'text-white');
                 b.classList.add('bg-gray-100', 'text-gray-600');
             });
             e.target.classList.remove('bg-gray-100', 'text-gray-600');
             e.target.classList.add('bg-brand-600', 'text-white');
 
-            // Logic
             const category = e.target.dataset.category;
-            if (category === 'all') {
-                renderListings(listings);
-            } else {
-                const filtered = listings.filter(item => item.make === category);
-                renderListings(filtered);
-            }
+            
+            // Render Sub-Filters and Filter Grid
+            handleMainFilter(category);
         });
     });
+}
+
+function handleMainFilter(category) {
+    // 1. Filter Listings by Brand
+    let filtered = listings;
+    if (category !== 'all') {
+        filtered = listings.filter(item => item.make === category);
+    }
+    renderListings(filtered);
+
+    // 2. Handle Sub-Filters Display
+    subFilterContainer.innerHTML = '';
+    
+    if (category === 'all' || !carModels[category]) {
+        subFilterContainer.classList.add('hidden');
+        subFilterContainer.classList.remove('flex');
+        return;
+    }
+
+    // Show Sub-Filter Container
+    subFilterContainer.classList.remove('hidden');
+    subFilterContainer.classList.add('flex');
+
+    // Add "All Models" Button for the selected brand
+    const allModelsBtn = createSubFilterBtn('الكل', true, () => {
+        // Reset to show all cars of this brand
+        const brandAll = listings.filter(item => item.make === category);
+        renderListings(brandAll);
+        updateSubActiveState(allModelsBtn);
+    });
+    subFilterContainer.appendChild(allModelsBtn);
+
+    // Add specific models
+    carModels[category].forEach(model => {
+        const modelBtn = createSubFilterBtn(model, false, () => {
+            // Filter by Brand AND Model (Checking if title contains model name)
+            const brandModel = listings.filter(item => 
+                item.make === category && item.title.includes(model)
+            );
+            renderListings(brandModel);
+            updateSubActiveState(modelBtn);
+        });
+        subFilterContainer.appendChild(modelBtn);
+    });
+}
+
+function createSubFilterBtn(text, isActive, onClick) {
+    const btn = document.createElement('button');
+    btn.className = `sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap ${isActive ? 'bg-brand-100 text-brand-900 border-brand-200 font-bold' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`;
+    btn.textContent = text;
+    btn.onclick = onClick;
+    return btn;
+}
+
+function updateSubActiveState(activeBtn) {
+    const allSub = subFilterContainer.querySelectorAll('button');
+    allSub.forEach(b => {
+        b.className = 'sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap bg-white text-gray-600 border-gray-200 hover:bg-gray-50';
+    });
+    activeBtn.className = 'sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap bg-brand-100 text-brand-900 border-brand-200 font-bold';
 }
 
 // Search Logic
@@ -160,6 +228,12 @@ function setupSearch() {
             item.make.toLowerCase().includes(term)
         );
         renderListings(filtered);
+        
+        // Reset filters visually if searching
+        if (term.length > 0) {
+           subFilterContainer.classList.add('hidden');
+           subFilterContainer.classList.remove('flex');
+        }
     };
 
     searchInput.addEventListener('input', handleSearch);
