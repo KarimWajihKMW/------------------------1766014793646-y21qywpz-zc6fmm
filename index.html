@@ -74,15 +74,21 @@
         <input type="text" id="mobileSearchInput" placeholder="ابحث عن سيارة..." class="w-full bg-gray-100 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-brand-500">
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white border-b border-gray-200 py-3 overflow-x-auto">
-        <div class="max-w-7xl mx-auto px-4 flex gap-2 whitespace-nowrap scrollbar-hide" id="filterContainer">
-            <button class="filter-btn active px-4 py-1 rounded-full text-sm font-semibold bg-brand-600 text-white" data-category="all">الكل</button>
-            <button class="filter-btn px-4 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200" data-category="تويوتا">تويوتا</button>
-            <button class="filter-btn px-4 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200" data-category="هيونداي">هيونداي</button>
-            <button class="filter-btn px-4 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200" data-category="فورد">فورد</button>
-            <button class="filter-btn px-4 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200" data-category="نيسان">نيسان</button>
-            <button class="filter-btn px-4 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200" data-category="مرسيدس">مرسيدس</button>
+    <!-- Filters Section -->
+    <div class="bg-white border-b border-gray-200 py-3 transition-all duration-300">
+        <!-- Main Brand Filters -->
+        <div class="max-w-7xl mx-auto px-4 flex gap-2 whitespace-nowrap overflow-x-auto scrollbar-hide pb-1" id="filterContainer">
+            <button class="filter-btn active px-4 py-2 rounded-full text-sm font-semibold bg-brand-600 text-white transition-colors duration-200" data-category="all">الكل</button>
+            <button class="filter-btn px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-200" data-category="تويوتا">تويوتا</button>
+            <button class="filter-btn px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-200" data-category="هيونداي">هيونداي</button>
+            <button class="filter-btn px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-200" data-category="فورد">فورد</button>
+            <button class="filter-btn px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-200" data-category="نيسان">نيسان</button>
+            <button class="filter-btn px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-200" data-category="مرسيدس">مرسيدس</button>
+        </div>
+
+        <!-- Sub Model Filters (Initially Hidden) -->
+        <div id="subFilterContainer" class="hidden max-w-7xl mx-auto px-4 gap-2 whitespace-nowrap overflow-x-auto scrollbar-hide mt-3 pt-3 border-t border-gray-100 animate-fade-in">
+            <!-- Sub filters will be injected here -->
         </div>
     </div>
 
