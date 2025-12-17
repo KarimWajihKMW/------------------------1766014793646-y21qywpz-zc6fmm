@@ -90,13 +90,79 @@ const mobileSearchInput = document.getElementById('mobileSearchInput');
 const filterContainer = document.getElementById('filterContainer');
 const subFilterContainer = document.getElementById('subFilterContainer');
 const adForm = document.getElementById('adForm');
+const loginForm = document.getElementById('loginForm');
+const guestNav = document.getElementById('guestNav');
+const userNav = document.getElementById('userNav');
+const userNameDisplay = document.getElementById('userNameDisplay');
+const userInitials = document.getElementById('userInitials');
+
+// Auth State
+let currentUser = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
     renderListings(listings);
     setupFilters();
     setupSearch();
 });
+
+// --- Auth Logic ---
+function checkAuth() {
+    const savedUser = localStorage.getItem('motors_user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        updateAuthUI();
+    }
+}
+
+function updateAuthUI() {
+    if (currentUser) {
+        guestNav.classList.add('hidden');
+        userNav.classList.remove('hidden');
+        userNav.classList.add('flex');
+        userNameDisplay.textContent = currentUser.name;
+        userInitials.textContent = currentUser.name.charAt(0);
+    } else {
+        guestNav.classList.remove('hidden');
+        userNav.classList.add('hidden');
+        userNav.classList.remove('flex');
+    }
+}
+
+loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    // Simulate Login
+    const email = e.target.querySelector('input[type="email"]').value;
+    // Simple mock user creation
+    currentUser = {
+        name: 'محمد عبد الله',
+        email: email,
+        id: Date.now()
+    };
+    
+    localStorage.setItem('motors_user', JSON.stringify(currentUser));
+    updateAuthUI();
+    closeModal('loginModal');
+});
+
+window.logout = function() {
+    currentUser = null;
+    localStorage.removeItem('motors_user');
+    updateAuthUI();
+}
+
+window.handlePostAd = function() {
+    if (!currentUser) {
+        // User is not logged in
+        openModal('loginModal');
+        return;
+    }
+    // User is logged in
+    openModal('addAdModal');
+}
+
+// --- Existing Logic ---
 
 // Render Cards
 function renderListings(data) {
@@ -321,7 +387,26 @@ function openDetails(id) {
 // Handle New Ad Submission
 adForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    alert('تم إضافة الإعلان بنجاح! (محاكاة)');
-    closeModal('addAdModal');
-    // In a real app, this would send data to backend
+    
+    // Check auth again just in case
+    if (!currentUser) {
+        closeModal('addAdModal');
+        openModal('loginModal');
+        return;
+    }
+
+    // In a real app, you would gather form data and send to backend
+    // Here we just show success
+    const btn = adForm.querySelector('button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'جاري النشر...';
+    btn.disabled = true;
+
+    setTimeout(() => {
+        alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
+        closeModal('addAdModal');
+        btn.textContent = originalText;
+        btn.disabled = false;
+        adForm.reset();
+    }, 1500);
 });
