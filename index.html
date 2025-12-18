@@ -8,20 +8,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            900: '#0c4a6e',
+        // Safety check to prevent errors if Tailwind CDN fails or hasn't loaded yet
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                50: '#f0f9ff',
+                                100: '#e0f2fe',
+                                500: '#0ea5e9',
+                                600: '#0284c7',
+                                900: '#0c4a6e',
+                            }
+                        },
+                        fontFamily: {
+                            cairo: ['Cairo', 'sans-serif'],
                         }
-                    },
-                    fontFamily: {
-                        cairo: ['Cairo', 'sans-serif'],
                     }
                 }
             }
