@@ -83,7 +83,7 @@ const carModels = {
     'مرسيدس': ['E200', 'S500', 'C200', 'G63', 'S-Class']
 };
 
-// DOM Elements
+// DOM Elements with safety checks
 const grid = document.getElementById('listingsGrid');
 const searchInput = document.getElementById('searchInput');
 const mobileSearchInput = document.getElementById('mobileSearchInput');
@@ -109,14 +109,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Auth Logic ---
 function checkAuth() {
-    const savedUser = localStorage.getItem('motors_user');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        updateAuthUI();
+    try {
+        const savedUser = localStorage.getItem('motors_user');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            updateAuthUI();
+        }
+    } catch (e) {
+        console.warn('LocalStorage access restricted:', e);
     }
 }
 
 function updateAuthUI() {
+    if (!guestNav || !userNav || !userNameDisplay || !userInitials) return;
+
     if (currentUser) {
         guestNav.classList.add('hidden');
         userNav.classList.remove('hidden');
@@ -130,44 +136,51 @@ function updateAuthUI() {
     }
 }
 
-loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    // Simulate Login
-    const email = e.target.querySelector('input[type="email"]').value;
-    // Simple mock user creation
-    currentUser = {
-        name: 'محمد عبد الله',
-        email: email,
-        id: Date.now()
-    };
-    
-    localStorage.setItem('motors_user', JSON.stringify(currentUser));
-    updateAuthUI();
-    closeModal('loginModal');
-});
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const emailInput = e.target.querySelector('input[type="email"]');
+        if (!emailInput) return;
+
+        const email = emailInput.value;
+        currentUser = {
+            name: 'محمد عبد الله',
+            email: email,
+            id: Date.now()
+        };
+        
+        try {
+            localStorage.setItem('motors_user', JSON.stringify(currentUser));
+        } catch (e) {
+            console.warn('LocalStorage save failed:', e);
+        }
+
+        updateAuthUI();
+        closeModal('loginModal');
+    });
+}
 
 window.logout = function() {
     currentUser = null;
-    localStorage.removeItem('motors_user');
+    try {
+        localStorage.removeItem('motors_user');
+    } catch (e) {}
     updateAuthUI();
 }
 
 window.handlePostAd = function() {
     if (!currentUser) {
-        // User is not logged in
         openModal('loginModal');
         return;
     }
-    // User is logged in
     openModal('addAdModal');
 }
 
-// --- Existing Logic ---
-
-// Render Cards
+// --- Rendering Logic ---
 function renderListings(data) {
+    if (!grid) return;
     grid.innerHTML = '';
-    if(data.length === 0) {
+    if (data.length === 0) {
         grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">لا توجد نتائج مطابقة</div>';
         return;
     }
@@ -202,13 +215,14 @@ function renderListings(data) {
     });
 }
 
-// Filters Setup
 function setupFilters() {
+    if (!filterContainer) return;
+
     const btns = filterContainer.querySelectorAll('.filter-btn');
     
     btns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // UI Update for Main Filters
+            // UI Update
             btns.forEach(b => {
                 b.classList.remove('bg-brand-600', 'text-white');
                 b.classList.add('bg-gray-100', 'text-gray-600');
@@ -217,22 +231,19 @@ function setupFilters() {
             e.target.classList.add('bg-brand-600', 'text-white');
 
             const category = e.target.dataset.category;
-            
-            // Render Sub-Filters and Filter Grid
             handleMainFilter(category);
         });
     });
 }
 
 function handleMainFilter(category) {
-    // 1. Filter Listings by Brand
     let filtered = listings;
     if (category !== 'all') {
         filtered = listings.filter(item => item.make === category);
     }
     renderListings(filtered);
 
-    // 2. Handle Sub-Filters Display
+    if (!subFilterContainer) return;
     subFilterContainer.innerHTML = '';
     
     if (category === 'all' || !carModels[category]) {
@@ -241,23 +252,20 @@ function handleMainFilter(category) {
         return;
     }
 
-    // Show Sub-Filter Container
     subFilterContainer.classList.remove('hidden');
     subFilterContainer.classList.add('flex');
 
-    // Add "All Models" Button for the selected brand
+    // 'All' Sub-filter
     const allModelsBtn = createSubFilterBtn('الكل', true, () => {
-        // Reset to show all cars of this brand
         const brandAll = listings.filter(item => item.make === category);
         renderListings(brandAll);
         updateSubActiveState(allModelsBtn);
     });
     subFilterContainer.appendChild(allModelsBtn);
 
-    // Add specific models
+    // Specific Models
     carModels[category].forEach(model => {
         const modelBtn = createSubFilterBtn(model, false, () => {
-            // Filter by Brand AND Model (Checking if title contains model name)
             const brandModel = listings.filter(item => 
                 item.make === category && item.title.includes(model)
             );
@@ -277,6 +285,7 @@ function createSubFilterBtn(text, isActive, onClick) {
 }
 
 function updateSubActiveState(activeBtn) {
+    if (!subFilterContainer) return;
     const allSub = subFilterContainer.querySelectorAll('button');
     allSub.forEach(b => {
         b.className = 'sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap bg-white text-gray-600 border-gray-200 hover:bg-gray-50';
@@ -295,35 +304,40 @@ function setupSearch() {
         );
         renderListings(filtered);
         
-        // Reset filters visually if searching
-        if (term.length > 0) {
+        if (term.length > 0 && subFilterContainer) {
            subFilterContainer.classList.add('hidden');
            subFilterContainer.classList.remove('flex');
         }
     };
 
-    searchInput.addEventListener('input', handleSearch);
-    mobileSearchInput.addEventListener('input', handleSearch);
+    if (searchInput) searchInput.addEventListener('input', handleSearch);
+    if (mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearch);
 }
 
 // Modal Handling
 window.openModal = function(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-    document.getElementById(modalId).classList.add('flex');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 }
 
 window.closeModal = function(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.getElementById(modalId).classList.remove('flex');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 }
 
-// Click outside to close
-window.onclick = function(event) {
+// Use addEventListener instead of window.onclick assignment for better compatibility
+window.addEventListener('click', (event) => {
     if (event.target.classList.contains('fixed')) {
         event.target.classList.add('hidden');
         event.target.classList.remove('flex');
     }
-}
+});
 
 // Details Logic
 function openDetails(id) {
@@ -331,6 +345,8 @@ function openDetails(id) {
     if (!ad) return;
 
     const content = document.getElementById('detailsContent');
+    if (!content) return;
+
     const commission = (ad.price * 0.01).toLocaleString();
 
     content.innerHTML = `
@@ -384,29 +400,29 @@ function openDetails(id) {
     openModal('detailsModal');
 }
 
-// Handle New Ad Submission
-adForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Check auth again just in case
-    if (!currentUser) {
-        closeModal('addAdModal');
-        openModal('loginModal');
-        return;
-    }
+if (adForm) {
+    adForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        if (!currentUser) {
+            closeModal('addAdModal');
+            openModal('loginModal');
+            return;
+        }
 
-    // In a real app, you would gather form data and send to backend
-    // Here we just show success
-    const btn = adForm.querySelector('button[type="submit"]');
-    const originalText = btn.textContent;
-    btn.textContent = 'جاري النشر...';
-    btn.disabled = true;
+        const btn = adForm.querySelector('button[type="submit"]');
+        if (!btn) return;
 
-    setTimeout(() => {
-        alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
-        closeModal('addAdModal');
-        btn.textContent = originalText;
-        btn.disabled = false;
-        adForm.reset();
-    }, 1500);
-});
+        const originalText = btn.textContent;
+        btn.textContent = 'جاري النشر...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
+            closeModal('addAdModal');
+            btn.textContent = originalText;
+            btn.disabled = false;
+            adForm.reset();
+        }, 1500);
+    });
+}
