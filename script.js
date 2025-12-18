@@ -83,16 +83,15 @@ const carModels = {
     'مرسيدس': ['E200', 'S500', 'C200', 'G63', 'S-Class']
 };
 
-// DOM Elements (Initialized later to prevent null errors)
-let grid, searchInput, mobileSearchInput, filterContainer, subFilterContainer;
-let adForm, loginForm, guestNav, userNav, userNameDisplay, userInitials;
+// DOM Elements References (Initialized safely on load)
+let grid, searchInput, mobileSearchInput, filterContainer, subFilterContainer, adForm, loginForm, guestNav, userNav, userNameDisplay, userInitials;
 
 // Auth State
 let currentUser = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize DOM references securely
+    // Initialize DOM Elements
     grid = document.getElementById('listingsGrid');
     searchInput = document.getElementById('searchInput');
     mobileSearchInput = document.getElementById('mobileSearchInput');
@@ -105,7 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
     userNameDisplay = document.getElementById('userNameDisplay');
     userInitials = document.getElementById('userInitials');
 
-    // Run Logic
+    if (!grid) {
+        console.error('Critical DOM elements missing');
+        return;
+    }
+
+    // Setup App
     checkAuth();
     renderListings(listings);
     setupFilters();
@@ -115,15 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Auth Logic ---
 function checkAuth() {
-    try {
-        const savedUser = localStorage.getItem('motors_user');
-        if (savedUser) {
+    const savedUser = localStorage.getItem('motors_user');
+    if (savedUser) {
+        try {
             currentUser = JSON.parse(savedUser);
-            updateAuthUI();
+        } catch(e) {
+            console.error('Error parsing user data');
+            currentUser = null;
         }
-    } catch (e) {
-        console.warn("LocalStorage not available:", e);
     }
+    updateAuthUI();
 }
 
 function updateAuthUI() {
@@ -146,6 +151,7 @@ function setupForms() {
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            // Simulate Login
             const emailInput = e.target.querySelector('input[type="email"]');
             const email = emailInput ? emailInput.value : 'user@example.com';
             
@@ -155,12 +161,7 @@ function setupForms() {
                 id: Date.now()
             };
             
-            try {
-                localStorage.setItem('motors_user', JSON.stringify(currentUser));
-            } catch (e) {
-                console.warn("Cannot save to LocalStorage", e);
-            }
-            
+            localStorage.setItem('motors_user', JSON.stringify(currentUser));
             updateAuthUI();
             closeModal('loginModal');
         });
@@ -169,13 +170,11 @@ function setupForms() {
     if (adForm) {
         adForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            
             if (!currentUser) {
                 closeModal('addAdModal');
                 openModal('loginModal');
                 return;
             }
-
             const btn = adForm.querySelector('button[type="submit"]');
             const originalText = btn.textContent;
             btn.textContent = 'جاري النشر...';
@@ -194,9 +193,7 @@ function setupForms() {
 
 window.logout = function() {
     currentUser = null;
-    try {
-        localStorage.removeItem('motors_user');
-    } catch(e) { console.warn(e); }
+    localStorage.removeItem('motors_user');
     updateAuthUI();
 }
 
@@ -208,12 +205,10 @@ window.handlePostAd = function() {
     openModal('addAdModal');
 }
 
-// --- Rendering & Filters Logic ---
-
+// --- Rendering Logic ---
 function renderListings(data) {
     if (!grid) return;
     grid.innerHTML = '';
-    
     if(data.length === 0) {
         grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">لا توجد نتائج مطابقة</div>';
         return;
@@ -249,12 +244,14 @@ function renderListings(data) {
     });
 }
 
+// Filters Setup
 function setupFilters() {
     if (!filterContainer) return;
     const btns = filterContainer.querySelectorAll('.filter-btn');
     
     btns.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // UI Update for Main Filters
             btns.forEach(b => {
                 b.classList.remove('bg-brand-600', 'text-white');
                 b.classList.add('bg-gray-100', 'text-gray-600');
@@ -323,6 +320,7 @@ function updateSubActiveState(activeBtn) {
     activeBtn.className = 'sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap bg-brand-100 text-brand-900 border-brand-200 font-bold';
 }
 
+// Search Logic
 function setupSearch() {
     const handleSearch = (e) => {
         const term = e.target.value.toLowerCase();
@@ -339,27 +337,28 @@ function setupSearch() {
         }
     };
 
-    if(searchInput) searchInput.addEventListener('input', handleSearch);
-    if(mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearch);
+    if (searchInput) searchInput.addEventListener('input', handleSearch);
+    if (mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearch);
 }
 
-// Modal Handling (Attached to window for HTML accessibility)
+// Modal Handling
 window.openModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+    const el = document.getElementById(modalId);
+    if (el) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
     }
 }
 
 window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+    const el = document.getElementById(modalId);
+    if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
     }
 }
 
+// Click outside to close
 window.onclick = function(event) {
     if (event.target.classList.contains('fixed')) {
         event.target.classList.add('hidden');
@@ -367,7 +366,8 @@ window.onclick = function(event) {
     }
 }
 
-window.openDetails = function(id) {
+// Details Logic
+function openDetails(id) {
     const ad = listings.find(item => item.id === id);
     if (!ad) return;
 
