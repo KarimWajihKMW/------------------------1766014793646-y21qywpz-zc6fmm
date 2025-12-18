@@ -83,28 +83,34 @@ const carModels = {
     'مرسيدس': ['E200', 'S500', 'C200', 'G63', 'S-Class']
 };
 
-// DOM Elements with safety checks
-const grid = document.getElementById('listingsGrid');
-const searchInput = document.getElementById('searchInput');
-const mobileSearchInput = document.getElementById('mobileSearchInput');
-const filterContainer = document.getElementById('filterContainer');
-const subFilterContainer = document.getElementById('subFilterContainer');
-const adForm = document.getElementById('adForm');
-const loginForm = document.getElementById('loginForm');
-const guestNav = document.getElementById('guestNav');
-const userNav = document.getElementById('userNav');
-const userNameDisplay = document.getElementById('userNameDisplay');
-const userInitials = document.getElementById('userInitials');
+// DOM Elements (Initialized later to prevent null errors)
+let grid, searchInput, mobileSearchInput, filterContainer, subFilterContainer;
+let adForm, loginForm, guestNav, userNav, userNameDisplay, userInitials;
 
 // Auth State
 let currentUser = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize DOM references securely
+    grid = document.getElementById('listingsGrid');
+    searchInput = document.getElementById('searchInput');
+    mobileSearchInput = document.getElementById('mobileSearchInput');
+    filterContainer = document.getElementById('filterContainer');
+    subFilterContainer = document.getElementById('subFilterContainer');
+    adForm = document.getElementById('adForm');
+    loginForm = document.getElementById('loginForm');
+    guestNav = document.getElementById('guestNav');
+    userNav = document.getElementById('userNav');
+    userNameDisplay = document.getElementById('userNameDisplay');
+    userInitials = document.getElementById('userInitials');
+
+    // Run Logic
     checkAuth();
     renderListings(listings);
     setupFilters();
     setupSearch();
+    setupForms();
 });
 
 // --- Auth Logic ---
@@ -116,19 +122,19 @@ function checkAuth() {
             updateAuthUI();
         }
     } catch (e) {
-        console.warn('LocalStorage access restricted:', e);
+        console.warn("LocalStorage not available:", e);
     }
 }
 
 function updateAuthUI() {
-    if (!guestNav || !userNav || !userNameDisplay || !userInitials) return;
-
+    if (!guestNav || !userNav) return;
+    
     if (currentUser) {
         guestNav.classList.add('hidden');
         userNav.classList.remove('hidden');
         userNav.classList.add('flex');
-        userNameDisplay.textContent = currentUser.name;
-        userInitials.textContent = currentUser.name.charAt(0);
+        if(userNameDisplay) userNameDisplay.textContent = currentUser.name;
+        if(userInitials) userInitials.textContent = currentUser.name.charAt(0);
     } else {
         guestNav.classList.remove('hidden');
         userNav.classList.add('hidden');
@@ -136,35 +142,61 @@ function updateAuthUI() {
     }
 }
 
-if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const emailInput = e.target.querySelector('input[type="email"]');
-        if (!emailInput) return;
+function setupForms() {
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailInput = e.target.querySelector('input[type="email"]');
+            const email = emailInput ? emailInput.value : 'user@example.com';
+            
+            currentUser = {
+                name: 'محمد عبد الله',
+                email: email,
+                id: Date.now()
+            };
+            
+            try {
+                localStorage.setItem('motors_user', JSON.stringify(currentUser));
+            } catch (e) {
+                console.warn("Cannot save to LocalStorage", e);
+            }
+            
+            updateAuthUI();
+            closeModal('loginModal');
+        });
+    }
 
-        const email = emailInput.value;
-        currentUser = {
-            name: 'محمد عبد الله',
-            email: email,
-            id: Date.now()
-        };
-        
-        try {
-            localStorage.setItem('motors_user', JSON.stringify(currentUser));
-        } catch (e) {
-            console.warn('LocalStorage save failed:', e);
-        }
+    if (adForm) {
+        adForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                closeModal('addAdModal');
+                openModal('loginModal');
+                return;
+            }
 
-        updateAuthUI();
-        closeModal('loginModal');
-    });
+            const btn = adForm.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.textContent = 'جاري النشر...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
+                closeModal('addAdModal');
+                btn.textContent = originalText;
+                btn.disabled = false;
+                adForm.reset();
+            }, 1500);
+        });
+    }
 }
 
 window.logout = function() {
     currentUser = null;
     try {
         localStorage.removeItem('motors_user');
-    } catch (e) {}
+    } catch(e) { console.warn(e); }
     updateAuthUI();
 }
 
@@ -176,11 +208,13 @@ window.handlePostAd = function() {
     openModal('addAdModal');
 }
 
-// --- Rendering Logic ---
+// --- Rendering & Filters Logic ---
+
 function renderListings(data) {
     if (!grid) return;
     grid.innerHTML = '';
-    if (data.length === 0) {
+    
+    if(data.length === 0) {
         grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">لا توجد نتائج مطابقة</div>';
         return;
     }
@@ -217,12 +251,10 @@ function renderListings(data) {
 
 function setupFilters() {
     if (!filterContainer) return;
-
     const btns = filterContainer.querySelectorAll('.filter-btn');
     
     btns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // UI Update
             btns.forEach(b => {
                 b.classList.remove('bg-brand-600', 'text-white');
                 b.classList.add('bg-gray-100', 'text-gray-600');
@@ -255,7 +287,6 @@ function handleMainFilter(category) {
     subFilterContainer.classList.remove('hidden');
     subFilterContainer.classList.add('flex');
 
-    // 'All' Sub-filter
     const allModelsBtn = createSubFilterBtn('الكل', true, () => {
         const brandAll = listings.filter(item => item.make === category);
         renderListings(brandAll);
@@ -263,7 +294,6 @@ function handleMainFilter(category) {
     });
     subFilterContainer.appendChild(allModelsBtn);
 
-    // Specific Models
     carModels[category].forEach(model => {
         const modelBtn = createSubFilterBtn(model, false, () => {
             const brandModel = listings.filter(item => 
@@ -293,7 +323,6 @@ function updateSubActiveState(activeBtn) {
     activeBtn.className = 'sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap bg-brand-100 text-brand-900 border-brand-200 font-bold';
 }
 
-// Search Logic
 function setupSearch() {
     const handleSearch = (e) => {
         const term = e.target.value.toLowerCase();
@@ -310,11 +339,11 @@ function setupSearch() {
         }
     };
 
-    if (searchInput) searchInput.addEventListener('input', handleSearch);
-    if (mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearch);
+    if(searchInput) searchInput.addEventListener('input', handleSearch);
+    if(mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearch);
 }
 
-// Modal Handling
+// Modal Handling (Attached to window for HTML accessibility)
 window.openModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -331,16 +360,14 @@ window.closeModal = function(modalId) {
     }
 }
 
-// Use addEventListener instead of window.onclick assignment for better compatibility
-window.addEventListener('click', (event) => {
+window.onclick = function(event) {
     if (event.target.classList.contains('fixed')) {
         event.target.classList.add('hidden');
         event.target.classList.remove('flex');
     }
-});
+}
 
-// Details Logic
-function openDetails(id) {
+window.openDetails = function(id) {
     const ad = listings.find(item => item.id === id);
     if (!ad) return;
 
@@ -398,31 +425,4 @@ function openDetails(id) {
         </div>
     `;
     openModal('detailsModal');
-}
-
-if (adForm) {
-    adForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        if (!currentUser) {
-            closeModal('addAdModal');
-            openModal('loginModal');
-            return;
-        }
-
-        const btn = adForm.querySelector('button[type="submit"]');
-        if (!btn) return;
-
-        const originalText = btn.textContent;
-        btn.textContent = 'جاري النشر...';
-        btn.disabled = true;
-
-        setTimeout(() => {
-            alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
-            closeModal('addAdModal');
-            btn.textContent = originalText;
-            btn.disabled = false;
-            adForm.reset();
-        }, 1500);
-    });
 }
