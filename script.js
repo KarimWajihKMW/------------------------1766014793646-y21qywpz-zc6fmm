@@ -1,3 +1,6 @@
+// Enable strict mode for better error catching
+'use strict';
+
 // Mock Data for Listings
 const listings = [
     {
@@ -83,117 +86,109 @@ const carModels = {
     'مرسيدس': ['E200', 'S500', 'C200', 'G63', 'S-Class']
 };
 
-// DOM Elements References (Initialized safely on load)
-let grid, searchInput, mobileSearchInput, filterContainer, subFilterContainer, adForm, loginForm, guestNav, userNav, userNameDisplay, userInitials;
+// DOM Elements
+const grid = document.getElementById('listingsGrid');
+const searchInput = document.getElementById('searchInput');
+const mobileSearchInput = document.getElementById('mobileSearchInput');
+const filterContainer = document.getElementById('filterContainer');
+const subFilterContainer = document.getElementById('subFilterContainer');
+const adForm = document.getElementById('adForm');
+const loginForm = document.getElementById('loginForm');
+const guestNav = document.getElementById('guestNav');
+const userNav = document.getElementById('userNav');
+const userNameDisplay = document.getElementById('userNameDisplay');
+const userInitials = document.getElementById('userInitials');
 
 // Auth State
 let currentUser = null;
 
+// Helper for Safe Storage (prevents 'Script error' if localStorage is blocked)
+const storage = {
+    get: (key) => {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            console.warn('LocalStorage access denied:', e);
+            return null;
+        }
+    },
+    set: (key, value) => {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            console.warn('LocalStorage access denied:', e);
+        }
+    },
+    remove: (key) => {
+        try {
+            localStorage.removeItem(key);
+        } catch (e) {
+            console.warn('LocalStorage access denied:', e);
+        }
+    }
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize DOM Elements
-    grid = document.getElementById('listingsGrid');
-    searchInput = document.getElementById('searchInput');
-    mobileSearchInput = document.getElementById('mobileSearchInput');
-    filterContainer = document.getElementById('filterContainer');
-    subFilterContainer = document.getElementById('subFilterContainer');
-    adForm = document.getElementById('adForm');
-    loginForm = document.getElementById('loginForm');
-    guestNav = document.getElementById('guestNav');
-    userNav = document.getElementById('userNav');
-    userNameDisplay = document.getElementById('userNameDisplay');
-    userInitials = document.getElementById('userInitials');
-
-    if (!grid) {
-        console.error('Critical DOM elements missing');
-        return;
-    }
-
-    // Setup App
     checkAuth();
-    renderListings(listings);
+    if (grid) renderListings(listings);
     setupFilters();
     setupSearch();
-    setupForms();
 });
 
 // --- Auth Logic ---
 function checkAuth() {
-    const savedUser = localStorage.getItem('motors_user');
+    const savedUser = storage.get('motors_user');
     if (savedUser) {
         try {
             currentUser = JSON.parse(savedUser);
-        } catch(e) {
-            console.error('Error parsing user data');
-            currentUser = null;
+            updateAuthUI();
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+            storage.remove('motors_user'); // Clear corrupted data
         }
     }
-    updateAuthUI();
 }
 
 function updateAuthUI() {
-    if (!guestNav || !userNav) return;
-    
     if (currentUser) {
-        guestNav.classList.add('hidden');
-        userNav.classList.remove('hidden');
-        userNav.classList.add('flex');
-        if(userNameDisplay) userNameDisplay.textContent = currentUser.name;
-        if(userInitials) userInitials.textContent = currentUser.name.charAt(0);
+        if (guestNav) guestNav.classList.add('hidden');
+        if (userNav) {
+            userNav.classList.remove('hidden');
+            userNav.classList.add('flex');
+        }
+        if (userNameDisplay) userNameDisplay.textContent = currentUser.name;
+        if (userInitials) userInitials.textContent = currentUser.name.charAt(0);
     } else {
-        guestNav.classList.remove('hidden');
-        userNav.classList.add('hidden');
-        userNav.classList.remove('flex');
+        if (guestNav) guestNav.classList.remove('hidden');
+        if (userNav) {
+            userNav.classList.add('hidden');
+            userNav.classList.remove('flex');
+        }
     }
 }
 
-function setupForms() {
-    if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Simulate Login
-            const emailInput = e.target.querySelector('input[type="email"]');
-            const email = emailInput ? emailInput.value : 'user@example.com';
-            
-            currentUser = {
-                name: 'محمد عبد الله',
-                email: email,
-                id: Date.now()
-            };
-            
-            localStorage.setItem('motors_user', JSON.stringify(currentUser));
-            updateAuthUI();
-            closeModal('loginModal');
-        });
-    }
-
-    if (adForm) {
-        adForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                closeModal('addAdModal');
-                openModal('loginModal');
-                return;
-            }
-            const btn = adForm.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
-            btn.textContent = 'جاري النشر...';
-            btn.disabled = true;
-
-            setTimeout(() => {
-                alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
-                closeModal('addAdModal');
-                btn.textContent = originalText;
-                btn.disabled = false;
-                adForm.reset();
-            }, 1500);
-        });
-    }
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const emailInput = e.target.querySelector('input[type="email"]');
+        const email = emailInput ? emailInput.value : 'user@example.com';
+        
+        currentUser = {
+            name: 'محمد عبد الله',
+            email: email,
+            id: Date.now()
+        };
+        
+        storage.set('motors_user', JSON.stringify(currentUser));
+        updateAuthUI();
+        closeModal('loginModal');
+    });
 }
 
 window.logout = function() {
     currentUser = null;
-    localStorage.removeItem('motors_user');
+    storage.remove('motors_user');
     updateAuthUI();
 }
 
@@ -205,9 +200,8 @@ window.handlePostAd = function() {
     openModal('addAdModal');
 }
 
-// --- Rendering Logic ---
+// --- Listing & Display Logic ---
 function renderListings(data) {
-    if (!grid) return;
     grid.innerHTML = '';
     if(data.length === 0) {
         grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">لا توجد نتائج مطابقة</div>';
@@ -244,14 +238,12 @@ function renderListings(data) {
     });
 }
 
-// Filters Setup
 function setupFilters() {
     if (!filterContainer) return;
-    const btns = filterContainer.querySelectorAll('.filter-btn');
     
+    const btns = filterContainer.querySelectorAll('.filter-btn');
     btns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // UI Update for Main Filters
             btns.forEach(b => {
                 b.classList.remove('bg-brand-600', 'text-white');
                 b.classList.add('bg-gray-100', 'text-gray-600');
@@ -273,8 +265,8 @@ function handleMainFilter(category) {
     renderListings(filtered);
 
     if (!subFilterContainer) return;
+
     subFilterContainer.innerHTML = '';
-    
     if (category === 'all' || !carModels[category]) {
         subFilterContainer.classList.add('hidden');
         subFilterContainer.classList.remove('flex');
@@ -320,7 +312,6 @@ function updateSubActiveState(activeBtn) {
     activeBtn.className = 'sub-filter-btn px-4 py-1.5 rounded-full text-sm border transition-colors duration-200 whitespace-nowrap bg-brand-100 text-brand-900 border-brand-200 font-bold';
 }
 
-// Search Logic
 function setupSearch() {
     const handleSearch = (e) => {
         const term = e.target.value.toLowerCase();
@@ -341,32 +332,31 @@ function setupSearch() {
     if (mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearch);
 }
 
-// Modal Handling
+// --- Modal Handling ---
 window.openModal = function(modalId) {
-    const el = document.getElementById(modalId);
-    if (el) {
-        el.classList.remove('hidden');
-        el.classList.add('flex');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 }
 
 window.closeModal = function(modalId) {
-    const el = document.getElementById(modalId);
-    if (el) {
-        el.classList.add('hidden');
-        el.classList.remove('flex');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 }
 
-// Click outside to close
-window.onclick = function(event) {
+// Safe replacement for window.onclick
+window.addEventListener('click', (event) => {
     if (event.target.classList.contains('fixed')) {
         event.target.classList.add('hidden');
         event.target.classList.remove('flex');
     }
-}
+});
 
-// Details Logic
 function openDetails(id) {
     const ad = listings.find(item => item.id === id);
     if (!ad) return;
@@ -425,4 +415,29 @@ function openDetails(id) {
         </div>
     `;
     openModal('detailsModal');
+}
+
+if (adForm) {
+    adForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        if (!currentUser) {
+            closeModal('addAdModal');
+            openModal('loginModal');
+            return;
+        }
+
+        const btn = adForm.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.textContent = 'جاري النشر...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            alert(`تم إضافة الإعلان بنجاح يا ${currentUser.name}!`);
+            closeModal('addAdModal');
+            btn.textContent = originalText;
+            btn.disabled = false;
+            adForm.reset();
+        }, 1500);
+    });
 }
