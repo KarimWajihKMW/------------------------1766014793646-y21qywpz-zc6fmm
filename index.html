@@ -146,10 +146,11 @@
     <footer class="bg-gray-800 text-white py-8 mt-12">
         <div class="max-w-7xl mx-auto px-4 text-center">
             <p class="mb-4 text-gray-400">موتورز - منصة بيع وشراء السيارات الأولى</p>
+            <!-- Updated Footer Links with Buttons to prevent navigation issues and black screens -->
             <div class="flex justify-center gap-4 text-sm text-gray-400">
-                <a href="#" class="hover:text-white">اتفاقية الاستخدام</a>
-                <a href="#" onclick="openModal('commissionModal')" class="hover:text-white">دفع العمولة</a>
-                <a href="#" class="hover:text-white">اتصل بنا</a>
+                <button onclick="openModal('termsModal')" class="hover:text-white focus:outline-none">اتفاقية الاستخدام</button>
+                <button onclick="openModal('commissionModal')" class="hover:text-white focus:outline-none">دفع العمولة</button>
+                <button onclick="openModal('contactModal')" class="hover:text-white focus:outline-none">اتصل بنا</button>
             </div>
             <p class="mt-8 text-xs text-gray-600">جميع الحقوق محفوظة © 2023</p>
         </div>
@@ -157,7 +158,7 @@
 
     <!-- Login Modal -->
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto relative overflow-hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto relative overflow-hidden transform transition-all">
             <button onclick="closeModal('loginModal')" class="absolute left-4 top-4 text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -247,9 +248,12 @@
         </div>
     </div>
 
-    <!-- Commission Modal -->
+    <!-- Commission Modal (Fixed) -->
     <div id="commissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto p-6">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto p-6 relative">
+             <button onclick="closeModal('commissionModal')" class="absolute left-4 top-4 text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
              <div class="text-center">
                 <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -270,6 +274,47 @@
                 </div>
                 <button onclick="closeModal('commissionModal')" class="w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800">فهمت ذلك</button>
              </div>
+        </div>
+    </div>
+
+    <!-- Terms Modal (New) -->
+    <div id="termsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-auto p-6 relative">
+            <button onclick="closeModal('termsModal')" class="absolute left-4 top-4 text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold mb-4 text-brand-900">اتفاقية الاستخدام</h2>
+            <div class="prose prose-sm text-gray-600 max-h-[60vh] overflow-y-auto p-2">
+                <p class="mb-3">أهلاً بك في منصة موتورز. باستخدامك للموقع، فإنك توافق على الشروط التالية:</p>
+                <ul class="list-disc list-inside space-y-2 mb-4">
+                    <li>يجب أن تكون المعلومات المدخلة في الإعلانات صحيحة ودقيقة.</li>
+                    <li>يمنع بيع السلع الممنوعة أو غير القانونية.</li>
+                    <li>العمولة واجبة الدفع في حال تم البيع عبر الموقع وهي في ذمة البائع.</li>
+                    <li>الموقع لا يتحمل مسؤولية التحويلات المالية بين البائع والمشتري.</li>
+                    <li>يجب عدم تكرار الإعلانات بشكل مزعج.</li>
+                </ul>
+                <p class="mb-3">نحتفظ بالحق في حظر أي مستخدم يخالف هذه الشروط دون سابق إنذار.</p>
+            </div>
+            <div class="mt-6 pt-4 border-t">
+                <button onclick="closeModal('termsModal')" class="w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700">موافق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Modal (New) -->
+    <div id="contactModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto p-6 relative">
+            <button onclick="closeModal('contactModal')" class="absolute left-4 top-4 text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-xl font-bold mb-4 text-brand-900">اتصل بنا</h2>
+            <p class="text-gray-600 mb-4 text-sm">نسعد بتلقي استفساراتكم واقتراحاتكم.</p>
+            <form class="space-y-4" onsubmit="event.preventDefault(); alert('تم إرسال رسالتك بنجاح!'); closeModal('contactModal');">
+                <input type="text" placeholder="الاسم" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                <input type="email" placeholder="البريد الإلكتروني" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                <textarea rows="3" placeholder="الرسالة" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+                <button type="submit" class="w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700">إرسال</button>
+            </form>
         </div>
     </div>
 
