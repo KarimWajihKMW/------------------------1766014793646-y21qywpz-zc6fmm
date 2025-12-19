@@ -102,7 +102,7 @@ const userInitials = document.getElementById('userInitials');
 // Auth State
 let currentUser = null;
 
-// Helper for Safe Storage (prevents 'Script error' if localStorage is blocked)
+// Helper for Safe Storage
 const storage = {
     get: (key) => {
         try {
@@ -145,7 +145,7 @@ function checkAuth() {
             updateAuthUI();
         } catch (e) {
             console.error('Error parsing user data:', e);
-            storage.remove('motors_user'); // Clear corrupted data
+            storage.remove('motors_user');
         }
     }
 }
