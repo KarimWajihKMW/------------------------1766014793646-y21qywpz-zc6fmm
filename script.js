@@ -361,10 +361,11 @@ function openDetails(id) {
     const ad = listings.find(item => item.id === id);
     if (!ad) return;
 
+    // Commission changed to 2% as per user request
+    const commission = (ad.price * 0.02).toLocaleString();
+
     const content = document.getElementById('detailsContent');
     if (!content) return;
-
-    const commission = (ad.price * 0.01).toLocaleString();
 
     content.innerHTML = `
         <div class="h-64 sm:h-80 w-full bg-gray-200">
@@ -409,7 +410,7 @@ function openDetails(id) {
                     </button>
                 </div>
                 <div class="text-xs text-gray-400">
-                    * عمولة الموقع على البائع (${commission} ريال)
+                    * عمولة الموقع على البائع (${commission} ريال) (2%)
                 </div>
             </div>
         </div>
